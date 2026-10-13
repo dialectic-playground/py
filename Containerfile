@@ -1,13 +1,17 @@
-# Toolchain image for REPO-NAME (container-first; see tools/dp-run).
+# Toolchain image for dialectic-playground/py: Python (container-first; see tools/dp-run).
 #
-# TEMPLATE: replace the base image with the official image for this repository's toolchain,
-# pinned by its multi-architecture index digest (FROM image:tag@sha256:...), and add only
-# what that image lacks. Keep `make` and the final ENV line. Dependabot (docker) keeps the
-# pin current.
-FROM docker.io/library/debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+# Python 3.14; build and package tool: uv.
+# Official base image pinned by multi-architecture index digest, plus make and python3 (for the
+# curriculum's black-box runner). Dependabot (docker) refreshes the digest; moving to a new
+# release line is a deliberate change (keep `make toolchain` and the native CI in step).
+FROM docker.io/library/python:3.14-slim-trixie@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+
+COPY --from=ghcr.io/astral-sh/uv:0.13.0@sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168 /uv /uvx /usr/local/bin/
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends make git ca-certificates \
+    && apt-get install -y --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/*
 
-ENV DP_IN_CONTAINER=1
+ENV UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    DP_IN_CONTAINER=1
