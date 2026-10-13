@@ -13,7 +13,7 @@
 
 # Project directories whose implementation is complete enough to build and test, in
 # curriculum order (for example: 00-hello-world 01-echo). CI covers exactly these.
-IMPLEMENTED :=
+IMPLEMENTED := 00-hello-world
 
 DP_HOST_GOALS += help roundtrip
 include tools/container.mk
@@ -41,7 +41,7 @@ check-repository:
 		[ -f "$$slug/Makefile" ] || { echo "missing project workspace: $$slug/Makefile"; status=1; }; \
 	done; \
 	marker="TEMPLATE"; marker="$$marker:"; \
-	if grep -rn --exclude-dir=.git --exclude-dir=.github --exclude-dir=tools \
+	if grep -rn --exclude-dir=.git --exclude-dir=.github --exclude-dir=tools --exclude-dir=.venv \
 	        --exclude-dir=$(CURRICULUM_ROOT) "$$marker" .; then \
 		echo "replace every $$marker marker listed above"; status=1; \
 	fi; \

@@ -10,3 +10,11 @@ __pycache__/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Repository-specific (Python projects: tool caches and build output; .venv/ is above)
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/

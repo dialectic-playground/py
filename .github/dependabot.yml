@@ -1,5 +1,5 @@
 # Keeps GitHub Actions (SHA-pinned) and the toolchain image digest current.
-# Package ecosystems (uv) are added when the first project's manifests exist.
+# One uv entry per implemented project (pyproject.toml + uv.lock in the project directory).
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -23,3 +23,13 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: uv
+    directory: /00-hello-world
+    schedule:
+      interval: weekly
+    groups:
+      uv-00-hello-world:
+        patterns: ["*"]
+    commit-message:
+      prefix: build

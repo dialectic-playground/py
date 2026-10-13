@@ -16,7 +16,7 @@ This repository implements the eleven projects of the
 specified to the byte by the curriculum and verified by its black-box tests on Linux, macOS,
 and Windows.
 
-**Status:** repository and toolchain ready; no projects implemented yet.
+**Status:** Implemented projects: 00-hello-world.
 
 ## Python at a glance
 
@@ -38,6 +38,26 @@ and Windows.
 | Native CI | astral-sh/setup-uv, then uv python install 3.14 |
 
 `make toolchain` verifies that the container and native toolchains are on this release line.
+
+Each project is a uv project: `pyproject.toml` and the committed `uv.lock` live in the project
+directory, sources in `src/<package>/`, and unit tests in `tests/`. The dev dependency group
+provides the project tools, which uv installs into the project's `.venv/` on `make all`:
+
+| Purpose | Tool | Make target |
+| :-- | :-- | :-- |
+| Unit tests | pytest | `make test` |
+| Lint | `ruff check`, `ruff format --check`, `mypy --strict` | `make lint` |
+| Format | `ruff format` | `make format` |
+
+`make all` runs `uv sync --locked`, which installs the tool as a console script into the
+project's `.venv` (`BIN_DIR` is `.venv/bin`, or `.venv/Scripts` on Windows). The container
+mounts the repository at the same path as the host, so the same `.venv` serves both; uv
+recreates it when it was made by the other environment. `make install` puts a virtual
+environment under `$(LIBDIR)/py/<project>/` and a `#!/bin/sh` launcher in `$(BINDIR)`.
+Dependabot (uv) keeps each project's lockfile current.
+
+**Windows:** run the installed tools from Git Bash or MSYS2, which honor `#!` lines. (The
+build itself produces native `dp-*.exe` console-script launchers in `.venv/Scripts`.)
 
 ## Layout
 

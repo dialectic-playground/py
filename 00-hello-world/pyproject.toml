@@ -1,0 +1,45 @@
+[project]
+name = "dp-hello"
+version = "1.0.0"
+description = "dp-hello: print a greeting to standard output (dialectic-playground project 00)"
+license = "MIT"
+requires-python = ">=3.14,<3.15"
+dependencies = []
+
+[project.scripts]
+dp-hello = "dp_hello.cli:run"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "dp_hello"
+
+[tool.pytest]
+testpaths = ["tests"]
+addopts = ["-q", "--strict-markers", "-p", "no:cacheprovider"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PT", "PL", "C4", "RET", "PTH"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+mypy_path = "src"
+cache_dir = ".mypy_cache"
