@@ -55,7 +55,7 @@ toolchain:
 	make --version | head -1
 	uv --version
 	@version="$$("$$(uv python find 3.14)" --version)"; echo "$$version"; echo "$$version" | grep -q '^Python 3\.14\.' \
-		|| { echo "toolchain: expected a version matching ^Python 3\.14\." >&2; exit 1; }
+		|| { echo 'toolchain: expected a version matching ^Python 3\.14\.' >&2; exit 1; }
 
 projects:
 	@[ -n "$(strip $(IMPLEMENTED))" ] || echo "projects: none implemented yet (IMPLEMENTED is empty)"
