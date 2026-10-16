@@ -35,9 +35,9 @@ UV ?= uv
 unexport UV_PROJECT_ENVIRONMENT VIRTUAL_ENV
 
 ifeq ($(OS),Windows_NT)
-  VENV_SCRIPTS := Scripts
+VENV_SCRIPTS := Scripts
 else
-  VENV_SCRIPTS := bin
+VENV_SCRIPTS := bin
 endif
 
 # Directory that contains the built executables after `make all`.

@@ -1,14 +1,39 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+**Table of Contents** _generated with [DocToc](https://github.com/thlorenz/doctoc)_
+
+- [Low-Level Design (LLD) — Standard Terminal Hello World](#low-level-design-lld--standard-terminal-hello-world)
+  - [1. Source layout](#1-source-layout)
+  - [2. Data types](#2-data-types)
+    - [2.1 `options.ParsedArgs` (frozen dataclass)](#21-optionsparsedargs-frozen-dataclass)
+    - [2.2 `validation.Config` (frozen dataclass)](#22-validationconfig-frozen-dataclass)
+    - [2.3 Error type](#23-error-type)
+  - [3. Module and function specifications](#3-module-and-function-specifications)
+    - [3.1 `options.parse_args`](#31-optionsparse_args)
+    - [3.2 `validation.validate`, `validate_name`, `validate_count`](#32-validationvalidate-validate_name-validate_count)
+    - [3.3 `greeting.greeting_line`, `greeting_text`](#33-greetinggreeting_line-greeting_text)
+    - [3.4 `output.encode`, `usage_diagnostic`, `write_stdout`, `write_stderr`](#34-outputencode-usage_diagnostic-write_stdout-write_stderr)
+    - [3.5 `cli.main`, `cli.run`](#35-climain-clirun)
+  - [4. Algorithms](#4-algorithms)
+  - [5. Platform-specific details](#5-platform-specific-details)
+  - [6. Resource management](#6-resource-management)
+  - [7. Sequence of one invocation](#7-sequence-of-one-invocation)
+  - [8. Design-to-code checklist](#8-design-to-code-checklist)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Low-Level Design (LLD) — Standard Terminal Hello World
 
-| Field | Value |
-| :-- | :-- |
-| Project | `00-hello-world` |
-| Tools | dp-hello |
-| Implementation language | py (Python 3.14, uv) |
-| Author | Brandon Perkins |
-| Version / date | 1.0 — 2026-10-13 |
-| Status | In review |
-| Inputs | `hld.md`, `specs/SRS.md`, `shared/CLI-CONVENTIONS.md` |
+| Field                   | Value                                                 |
+| :---------------------- | :---------------------------------------------------- |
+| Project                 | `00-hello-world`                                      |
+| Tools                   | dp-hello                                              |
+| Implementation language | py (Python 3.14, uv)                                  |
+| Author                  | Brandon Perkins                                       |
+| Version / date          | 1.0 — 2026-10-13                                      |
+| Status                  | In review                                             |
+| Inputs                  | `hld.md`, `specs/SRS.md`, `shared/CLI-CONVENTIONS.md` |
 
 ## 1. Source layout
 
@@ -32,39 +57,43 @@
 ## 2. Data types
 
 ### 2.1 `options.ParsedArgs` (frozen dataclass)
-| Field | Type | Default | Constraint / invariant | SRS |
-| :-- | :-- | :-- | :-- | :-- |
-| `action` | `Action` (`GREET`, `HELP`, `VERSION`) | `GREET` | For `HELP`/`VERSION` all other fields are unset | FR-07, FR-08 |
-| `name` | `OptionValue \| None` | `None` | Last `-n`/`--name` occurrence, unvalidated | FR-02, FR-06 |
-| `count` | `OptionValue \| None` | `None` | Last `-c`/`--count` occurrence, unvalidated | FR-04, FR-06 |
-| `first_operand` | `str \| None` | `None` | First operand, including tokens after `--` | FR-09 |
+
+| Field           | Type                                  | Default | Constraint / invariant                          | SRS          |
+| :-------------- | :------------------------------------ | :------ | :---------------------------------------------- | :----------- |
+| `action`        | `Action` (`GREET`, `HELP`, `VERSION`) | `GREET` | For `HELP`/`VERSION` all other fields are unset | FR-07, FR-08 |
+| `name`          | `OptionValue \| None`                 | `None`  | Last `-n`/`--name` occurrence, unvalidated      | FR-02, FR-06 |
+| `count`         | `OptionValue \| None`                 | `None`  | Last `-c`/`--count` occurrence, unvalidated     | FR-04, FR-06 |
+| `first_operand` | `str \| None`                         | `None`  | First operand, including tokens after `--`      | FR-09        |
 
 `OptionValue(value: str, spelled: str)` keeps a raw value and the option spelling (`-n`,
 `--name`, `-c`, `--count`) for CONV-13 messages.
 
 ### 2.2 `validation.Config` (frozen dataclass)
-| Field | Type | Default | Constraint / invariant | SRS |
-| :-- | :-- | :-- | :-- | :-- |
-| `name` | `str` | `"World"` | Non-empty | FR-01 … FR-03 |
-| `count` | `int` | `1` | `1 <= count <= 1000` | FR-04, FR-05 |
+
+| Field   | Type  | Default   | Constraint / invariant | SRS           |
+| :------ | :---- | :-------- | :--------------------- | :------------ |
+| `name`  | `str` | `"World"` | Non-empty              | FR-01 … FR-03 |
+| `count` | `int` | `1`       | `1 <= count <= 1000`   | FR-04, FR-05  |
 
 ### 2.3 Error type
-`options.UsageError(message)`; `message` is the text after `dp-hello: `. `cli.main` writes it
+
+`options.UsageError(message)`; `message` is the text after `dp-hello:`. `cli.main` writes it
 followed by `Try 'dp-hello --help' for more information.` and returns 2.
 
-| Variant (message) | Raised by | Exit status |
-| :-- | :-- | :-- |
-| `invalid option -- 'x'` | `_parse_short_bundle` | 2 |
-| `unrecognized option '<token>'` | `_parse_long` | 2 |
-| `option requires an argument -- 'n'` / `'c'` | `_parse_short_bundle` | 2 |
-| `option '--name' requires an argument` / `'--count'` | `_parse_long` | 2 |
-| `option '--help' doesn't allow an argument` / `'--version'` | `_parse_long` | 2 |
-| `invalid argument '<V>' for '<spelling>'` | `validate_name`, `validate_count` | 2 |
-| `extra operand '<X>'` | `validate` | 2 |
+| Variant (message)                                           | Raised by                         | Exit status |
+| :---------------------------------------------------------- | :-------------------------------- | :---------- |
+| `invalid option -- 'x'`                                     | `_parse_short_bundle`             | 2           |
+| `unrecognized option '<token>'`                             | `_parse_long`                     | 2           |
+| `option requires an argument -- 'n'` / `'c'`                | `_parse_short_bundle`             | 2           |
+| `option '--name' requires an argument` / `'--count'`        | `_parse_long`                     | 2           |
+| `option '--help' doesn't allow an argument` / `'--version'` | `_parse_long`                     | 2           |
+| `invalid argument '<V>' for '<spelling>'`                   | `validate_name`, `validate_count` | 2           |
+| `extra operand '<X>'`                                       | `validate`                        | 2           |
 
 ## 3. Module and function specifications
 
 ### 3.1 `options.parse_args`
+
 - **Signature:** `parse_args(args: list[str]) -> ParsedArgs`
 - **Responsibility:** syntactic left-to-right scan of the arguments.
 - **Preconditions:** `args` excludes the program name.
@@ -83,6 +112,7 @@ followed by `Try 'dp-hello --help' for more information.` and returns 2.
 - **Unit tests:** all of `tests/test_options.py`.
 
 ### 3.2 `validation.validate`, `validate_name`, `validate_count`
+
 - **Signatures:** `validate(parsed: ParsedArgs) -> Config`;
   `validate_name(option: OptionValue) -> str`; `validate_count(option: OptionValue) -> int`
 - **Responsibility:** reject operands and invalid values, apply defaults.
@@ -97,6 +127,7 @@ followed by `Try 'dp-hello --help' for more information.` and returns 2.
 - **Unit tests:** all of `tests/test_validation.py`.
 
 ### 3.3 `greeting.greeting_line`, `greeting_text`
+
 - **Signatures:** `greeting_line(name: str) -> str`; `greeting_text(name: str, count: int) -> str`
 - **Responsibility:** pure construction of `Hello, <name>!\n`, repeated `count` times (empty for
   `count <= 0`).
@@ -105,6 +136,7 @@ followed by `Try 'dp-hello --help' for more information.` and returns 2.
 - **Unit tests:** all of `tests/test_greeting.py`.
 
 ### 3.4 `output.encode`, `usage_diagnostic`, `write_stdout`, `write_stderr`
+
 - **Signatures:** `encode(text: str) -> bytes`; `usage_diagnostic(message: str) -> bytes`;
   `write_stdout(data: bytes) -> bool`; `write_stderr(data: bytes) -> bool`
 - **Responsibility:** exact bytes and binary writes.
@@ -119,6 +151,7 @@ followed by `Try 'dp-hello --help' for more information.` and returns 2.
   `test_process_output_is_utf8_and_lf_only`.
 
 ### 3.5 `cli.main`, `cli.run`
+
 - **Signatures:** `main(args: list[str]) -> int`; `run() -> None` (console-script entry point,
   `sys.exit(main(sys.argv[1:]))`)
 - **Algorithm:** parse → help/version text, or validate + `greeting_text`; on `UsageError` write
@@ -128,6 +161,7 @@ followed by `Try 'dp-hello --help' for more information.` and returns 2.
 - **Unit tests:** `tests/test_cli.py`.
 
 ## 4. Algorithms
+
 The only algorithms are the scanner (§3.1) and the count check (§3.2). The scanner is a single
 pass with one index, which makes scan order (CONV-12) and "first error wins" fall out of the
 control flow. Counting with an explicit ASCII digit set, rather than `str.isdigit()` or `int()`,
@@ -136,20 +170,22 @@ surrounding whitespace.
 
 ## 5. Platform-specific details
 
-| Concern | Linux | macOS | Windows | Abstraction |
-| :-- | :-- | :-- | :-- | :-- |
-| argv decoding | bytes → str (UTF-8 or locale, `surrogateescape`) | same | UTF-16 command line → str | `output.encode` inverts it |
-| Line endings | binary buffer | binary buffer | binary buffer (no CRLF) | `output._write` |
-| EPIPE | `BrokenPipeError` | `BrokenPipeError` | `OSError` (`EINVAL`/`EPIPE`) | `output._write` catches `OSError` |
-| Executable in `BIN_DIR` | `.venv/bin/dp-hello` (`#!` script) | same | `.venv/Scripts/dp-hello.exe` | Makefile `VENV_SCRIPTS` |
-| Installed launcher | `#!/bin/sh` script execing the installed console script | same | same (run from Git Bash / MSYS2) | `DP_INSTALL` |
+| Concern                 | Linux                                                   | macOS             | Windows                          | Abstraction                       |
+| :---------------------- | :------------------------------------------------------ | :---------------- | :------------------------------- | :-------------------------------- |
+| argv decoding           | bytes → str (UTF-8 or locale, `surrogateescape`)        | same              | UTF-16 command line → str        | `output.encode` inverts it        |
+| Line endings            | binary buffer                                           | binary buffer     | binary buffer (no CRLF)          | `output._write`                   |
+| EPIPE                   | `BrokenPipeError`                                       | `BrokenPipeError` | `OSError` (`EINVAL`/`EPIPE`)     | `output._write` catches `OSError` |
+| Executable in `BIN_DIR` | `.venv/bin/dp-hello` (`#!` script)                      | same              | `.venv/Scripts/dp-hello.exe`     | Makefile `VENV_SCRIPTS`           |
+| Installed launcher      | `#!/bin/sh` script execing the installed console script | same              | same (run from Git Bash / MSYS2) | `DP_INSTALL`                      |
 
 ## 6. Resource management
+
 No files, sockets, or child processes are used at run time. The only buffer is the output
 string: at most 1000 × (9 + len(NAME)) bytes. `output._silence` opens and closes the null device
 only after a failed write.
 
 ## 7. Sequence of one invocation
+
 P06, `dp-hello -c2 -n Ken`: `run` → `main(["-c2", "-n", "Ken"])` → `parse_args`:
 `_parse_short_bundle("-c2")` stores `OptionValue("2", "-c")`; `_parse_short_bundle("-n")` takes
 the next token, `OptionValue("Ken", "-n")` → `ParsedArgs(GREET, name, count)` → `validate` →
@@ -158,10 +194,10 @@ the next token, `OptionValue("Ken", "-n")` → `ParsedArgs(GREET, name, count)` 
 
 ## 8. Design-to-code checklist
 
-| HLD component | LLD section | Source file(s) | Unit-test file(s) |
-| :-- | :-- | :-- | :-- |
-| options | §3.1 | `src/dp_hello/options.py` | `tests/test_options.py` |
-| validation | §3.2 | `src/dp_hello/validation.py` | `tests/test_validation.py` |
-| greeting | §3.3 | `src/dp_hello/greeting.py` | `tests/test_greeting.py` |
-| output | §3.4 | `src/dp_hello/output.py` | `tests/test_cli.py` |
-| cli | §3.5 | `src/dp_hello/cli.py`, `src/dp_hello/__main__.py` | `tests/test_cli.py` |
+| HLD component | LLD section | Source file(s)                                    | Unit-test file(s)          |
+| :------------ | :---------- | :------------------------------------------------ | :------------------------- |
+| options       | §3.1        | `src/dp_hello/options.py`                         | `tests/test_options.py`    |
+| validation    | §3.2        | `src/dp_hello/validation.py`                      | `tests/test_validation.py` |
+| greeting      | §3.3        | `src/dp_hello/greeting.py`                        | `tests/test_greeting.py`   |
+| output        | §3.4        | `src/dp_hello/output.py`                          | `tests/test_cli.py`        |
+| cli           | §3.5        | `src/dp_hello/cli.py`, `src/dp_hello/__main__.py` | `tests/test_cli.py`        |
