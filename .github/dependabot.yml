@@ -53,3 +53,7 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: ci
+    # Hooks pinned to a project toolchain's version change together with that toolchain.
+    ignore:
+      - dependency-name: "https://github.com/astral-sh/ruff-pre-commit"
+      - dependency-name: "https://github.com/astral-sh/uv-pre-commit"
